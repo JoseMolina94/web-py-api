@@ -1,95 +1,144 @@
-import Image from "next/image";
+'use client'
+
+import { ChangeEvent, useState } from 'react'
 import styles from "./page.module.css";
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+type tFunctionInput = {
+  functionName: string
+  var1?: string | number,
+  var2?: string | number
+}
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+type tFunctionOptionData = {
+  value: string,
+  label: string,
+  type: string,
+  vars: number,
+  default?: string | number
+}
+
+export default function Home() {
+  const functionsOptions = [
+    {
+      value: 'addition',
+      label: 'Suma',
+      type: 'number',
+      vars: 2,
+      default: '0'
+    },
+    {
+      value: 'subtraction',
+      label: 'Resta',
+      type: 'number',
+      vars: 2,
+      default: '0'
+    },
+    {
+      value: 'to_lowercase',
+      label: 'Convertir a minusculas',
+      type: 'text',
+      vars: 1,
+      default: ''
+    },
+    {
+      value: 'to_uppercase',
+      label: 'Convertir a mayusculas',
+      type: 'text',
+      vars: 1,
+      default: ''
+    },
+  ]
+
+  const [result, setResult] = useState('')
+  const [inputs, setInputs] = useState<tFunctionInput>({ functionName: 'addition', var1: '0', var2: '0' })
+  const [selectFunctionData, setSelectFunctionData] = useState<tFunctionOptionData | undefined>(functionsOptions[0])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const res = await fetch('/api/execute-function', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(inputs),
+    })
+
+    const data = await res.json()
+    console.log("Envieado: ", JSON.stringify(inputs), " resultado: ", data)
+
+    setResult(data.result)
+  }
+
+  const selectFunction = (event: ChangeEvent<HTMLSelectElement>) => {
+    const functionName = event.target.value
+    const functionData = functionsOptions.find((option: tFunctionOptionData) => option.value === functionName)
+
+    setSelectFunctionData(functionData)
+
+    setInputs({
+      functionName,
+      var1: functionData?.default,
+      var2: functionData?.default
+    })
+  }
+
+  const onChangeInput = (event: ChangeEvent<HTMLInputElement>) => {
+    setInputs(prevState => ({
+      ...prevState,
+      [event.target.name]: event.target.value
+    }))
+  }
+
+  return (
+    <div className={styles.container}>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <select onChange={selectFunction}>
+          {
+            functionsOptions.map((option: tFunctionOptionData, index: number) => (
+              <option
+                value={option.value}
+                key={`function-option-${index}`}
+              >
+                {option.label}
+              </option>
+            ))
+          }
+        </select>
+
+        {
+          selectFunctionData &&
+          <div>
+            <div className={styles.inputsContainer}>
+              {
+                Array.from(new Array(selectFunctionData?.vars)).map((_, varItem: number) => (
+                  <input
+                    key={`input-var-${varItem + 1}`}
+                    type={selectFunctionData.type}
+                    placeholder={`Var${varItem + 1}`}
+                    name={`var${varItem + 1}`}
+                    onChange={e => onChangeInput(e)}
+                    value={
+                      (inputs as any)[`var${varItem + 1}`] || (selectFunctionData.type === 'number' ? '0' : '')
+                    }
+                  />
+                ))
+              }
+            </div>
+
+            <div className={styles.buttonAndResultContainer}>
+              <button 
+                className={styles.executeButton} 
+                type="submit"
+              >
+                  Ejecutar
+              </button>
+              <p className={styles.resultLabel}>
+                <strong>Resultado: </strong>
+                {result}
+              </p>
+            </div>
+          </div>
+        }
+      </form>
     </div>
-  );
+  )
 }

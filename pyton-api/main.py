@@ -1,10 +1,15 @@
 import sys
 import importlib
 import pkgutil
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional
 
+# Importa tus paquetes como módulos
 import numerics
 import alfabetics
 
+# Descubrimiento dinámico de funciones
 def discover_modules(package):
     return [
         name for _, name, _ in pkgutil.walk_packages(package.__path__, package.__name__ + ".")
@@ -26,11 +31,13 @@ def discover_functions():
 
     return availables_functions
 
+# Mostrar funciones
 def show_functions(functions):
-    print("📚 Funciones disponibles:")
+    print("Funciones disponibles:")
     for name in functions:
         print(f" - {name}")
 
+# Función Main
 def main():
     functions = discover_functions()
 
@@ -55,10 +62,32 @@ def main():
         return
 
     try:
-        resultado = function(var1, var2)
-        print(f"✅ Resultado: {resultado}")
+        result = function(var1, var2)
+        print(f"Resultado: {result}")
     except Exception as e:
-        print(f"⚠️ Error al ejecutar la función: {e}")
+        print(f"Error al ejecutar la función: {e}")
 
+# API con FastAPI
+app = FastAPI()
+functions_cache = discover_functions()
+
+class RequestModel(BaseModel):
+    function: str
+    var1: str
+    var2: Optional[str] = None
+
+@app.post("/execute-function")
+def execute_function(data: RequestModel):
+    func = functions_cache.get(data.function)
+    if not func:
+        raise HTTPException(status_code=404, detail="Función no encontrada")
+
+    try:
+        result = func(data.var1, data.var2)
+        return {"result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Detecta si se ejecuta por consola o con Uvicorn
 if __name__ == "__main__":
     main()
