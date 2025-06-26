@@ -37,7 +37,7 @@ De ser asi entra en la carpeta de la **python-api**:
 cd python-api
 ```
 
-##### **Usando las funciones**:
+**Usando las funciones**:
 
 Puedes usar las funciones mediante argumentos líneales ordenados, por ejemplo:
 
