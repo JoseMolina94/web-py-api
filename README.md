@@ -59,6 +59,12 @@ python main.py addition --help
 
 ### 3. Ejecutando la API Python
 
+Entra primero a la carpeta de la API de Python utilizando el comando:
+
+```bash
+cd pyton-api
+```
+
 Para este paso necesitas tener **FastAPI** instalado, en caso contrario utiliza el comando:
 
 ```bash
