@@ -24,3 +24,19 @@ option {
   padding: 0;
   margin: 0;
 }
+
+button {
+  cursor: pointer;
+}
+
+.check {
+  display: flex;
+  gap: .5rem;
+  font-size: 14px;
+  align-items: center;
+}
+
+.check .checkbox {
+  width: 18px;
+  height: 18px;
+}

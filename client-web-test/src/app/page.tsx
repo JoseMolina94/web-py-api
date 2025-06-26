@@ -1,143 +1,168 @@
 'use client'
 
-import { ChangeEvent, useState } from 'react'
-import styles from "./page.module.css";
+import { ChangeEvent, useState, useEffect } from 'react'
+import { FunctionSchemeData } from '@/types/functions'
+import { 
+  additionFunctionScheme, 
+  subtractionFunctionScheme, 
+  toLowercaseFunctionScheme, 
+  toUppercaseFunctionScheme 
+} from '@/schemes/functions'
 
-type tFunctionInput = {
-  functionName: string
-  var1?: string | number,
-  var2?: string | number
-}
-
-type tFunctionOptionData = {
-  value: string,
-  label: string,
-  type: string,
-  vars: number,
-  default?: string | number
-}
+import styles from "./page.module.css"
 
 export default function Home() {
-  const functionsOptions = [
-    {
-      value: 'addition',
-      label: 'Suma',
-      type: 'number',
-      vars: 2,
-      default: '0'
-    },
-    {
-      value: 'subtraction',
-      label: 'Resta',
-      type: 'number',
-      vars: 2,
-      default: '0'
-    },
-    {
-      value: 'to_lowercase',
-      label: 'Convertir a minusculas',
-      type: 'text',
-      vars: 1,
-      default: ''
-    },
-    {
-      value: 'to_uppercase',
-      label: 'Convertir a mayusculas',
-      type: 'text',
-      vars: 1,
-      default: ''
-    },
+  const functionsOptions: FunctionSchemeData[] = [
+    additionFunctionScheme,
+    subtractionFunctionScheme,
+    toLowercaseFunctionScheme,
+    toUppercaseFunctionScheme
   ]
 
+  const [useKwargs, setUseKwargs] = useState<boolean>(false)
   const [result, setResult] = useState('')
-  const [inputs, setInputs] = useState<tFunctionInput>({ functionName: 'addition', var1: '0', var2: '0' })
-  const [selectFunctionData, setSelectFunctionData] = useState<tFunctionOptionData | undefined>(functionsOptions[0])
+  const [selectedFunction, setSelectedFunction] = useState<FunctionSchemeData>(functionsOptions[0])
+  const [args, setArgs] = useState<string[]>([])
+  const [kwargs, setKwargs] = useState<Record<string, string>>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const body = {
+      functionName: selectedFunction.value,
+      args: useKwargs ? [] : args,
+      kwargs: useKwargs ? kwargs : {}
+    }
+
     const res = await fetch('/api/execute-function', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(inputs),
+      body: JSON.stringify(body),
     })
 
     const data = await res.json()
-    console.log("Envieado: ", JSON.stringify(inputs), " resultado: ", data)
+    console.log("Enviado:", body, "Respuesta:", data)
 
-    setResult(data.result)
+    setResult(data.result || data.error)
   }
 
   const selectFunction = (event: ChangeEvent<HTMLSelectElement>) => {
     const functionName = event.target.value
-    const functionData = functionsOptions.find((option: tFunctionOptionData) => option.value === functionName)
+    const functionData = functionsOptions.find((f) => f.value === functionName)!
+    setSelectedFunction(functionData)
 
-    setSelectFunctionData(functionData)
+    setArgs(new Array(functionData.vars).fill(functionData.default ?? ''))
 
-    setInputs({
-      functionName,
-      var1: functionData?.default,
-      var2: functionData?.default
-    })
+    const newKwargs = (functionData.kwargKeys || []).reduce((acc, key) => {
+      acc[key] = functionData.default?.toString() ?? ''
+      return acc
+    }, {} as Record<string, string>)
+
+    setKwargs(newKwargs)
   }
 
-  const onChangeInput = (event: ChangeEvent<HTMLInputElement>) => {
-    setInputs(prevState => ({
-      ...prevState,
-      [event.target.name]: event.target.value
-    }))
+  const onChangeArg = (index: number, value: string) => {
+    const updatedArgs = [...args]
+    updatedArgs[index] = value
+    setArgs(updatedArgs)
   }
+
+  const onChangeKwarg = (key: string, value: string) => {
+    setKwargs(prev => ({ ...prev, [key]: value }))
+  }
+
+  useEffect(() => {
+    setArgs(new Array(functionsOptions[0].vars).fill(functionsOptions[0].default ?? ''))
+    setKwargs(
+      (functionsOptions[0].kwargKeys || []).reduce((acc, key) => {
+        acc[key] = functionsOptions[0].default?.toString() ?? ''
+        return acc
+      }, {} as Record<string, string>)
+    )
+  }, [])
 
   return (
     <div className={styles.container}>
       <form onSubmit={handleSubmit} className={styles.form}>
-        <select onChange={selectFunction}>
-          {
-            functionsOptions.map((option: tFunctionOptionData, index: number) => (
-              <option
-                value={option.value}
-                key={`function-option-${index}`}
-              >
-                {option.label}
-              </option>
-            ))
-          }
+
+        <h1 className={styles.title}>
+          Client Web Test
+        </h1>
+        <p className={styles.description}>
+          Aquí puedes probar las funciones de la Python API. <br /><br />
+          Puedes hacer envios usando el sistema de "args" o de "kwargs" utilizando el checkbox justo abajo.
+        </p>
+
+        <div className='check'>
+          <label>
+            Usar kwargs
+          </label>
+
+          <input
+            className='checkbox'
+            type="checkbox"
+            checked={useKwargs}
+            onChange={(e) => setUseKwargs(e.target.checked)}
+          />
+        </div>
+
+        <select onChange={selectFunction} value={selectedFunction.value}>
+          {functionsOptions.map((option, index) => (
+            <option value={option.value} key={`function-option-${index}`}>
+              {option.label}
+            </option>
+          ))}
         </select>
 
-        {
-          selectFunctionData &&
-          <div>
-            <div className={styles.inputsContainer}>
-              {
-                Array.from(new Array(selectFunctionData?.vars)).map((_, varItem: number) => (
+        <div>
+          {useKwargs
+            ? (
+              <div className={styles.kwargsContainer}>
+                {selectedFunction.kwargKeys?.map((key: string, index: number) => (
+                  <div
+                    key={`kwarg-${index}`}
+                    className={styles.kwargRow}
+                  >
+                    <label className={styles.kwargLabel} >
+                      {key}:
+                    </label>
+                    <input
+                      type={selectedFunction.type}
+                      placeholder={key}
+                      value={kwargs[key] || ''}
+                      onChange={(e) => onChangeKwarg(key, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.inputsContainer}>
+                {args.map((value: string, index: number) => (
                   <input
-                    key={`input-var-${varItem + 1}`}
-                    type={selectFunctionData.type}
-                    placeholder={`Var${varItem + 1}`}
-                    name={`var${varItem + 1}`}
-                    onChange={e => onChangeInput(e)}
-                    value={
-                      (inputs as any)[`var${varItem + 1}`] || (selectFunctionData.type === 'number' ? '0' : '')
-                    }
+                    key={`arg-${index}`}
+                    type={selectedFunction.type}
+                    placeholder={`Arg ${index + 1}`}
+                    value={value}
+                    onChange={(e) => onChangeArg(index, e.target.value)}
                   />
-                ))
-              }
-            </div>
+                ))}
+              </div>
+            )}
 
-            <div className={styles.buttonAndResultContainer}>
-              <button 
-                className={styles.executeButton} 
-                type="submit"
-              >
-                  Ejecutar
-              </button>
-              <p className={styles.resultLabel}>
-                <strong>Resultado: </strong>
-                {result}
-              </p>
-            </div>
+          <div className={styles.buttonAndResultContainer}>
+            <button
+              className={styles.executeButton}
+              type="submit"
+            >
+              Ejecutar
+            </button>
+            <p className={styles.resultLabel}>
+              <strong>Resultado: </strong>
+              {result}
+            </p>
           </div>
-        }
+
+        </div>
       </form>
     </div>
   )

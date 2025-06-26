@@ -1,5 +1,11 @@
-def to_lowercase(a, _=None):
-    return a.lower()
+def to_lowercase(string=None, **kwargs):
+  if string is None:
+        string = kwargs.get("string")
+        
+  return string.lower()
 
-def to_uppercase(a, _=None):
-  return a.upper()
+def to_uppercase(string=None, **kwargs):
+  if string is None:
+        string = kwargs.get("string")
+        
+  return string.upper()

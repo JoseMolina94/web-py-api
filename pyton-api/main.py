@@ -3,9 +3,9 @@ import importlib
 import pkgutil
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
-# Importa tus paquetes como módulos
+# Paquetes como módulos
 import numerics
 import alfabetics
 
@@ -17,7 +17,7 @@ def discover_modules(package):
 
 def discover_functions():
     packages = [numerics, alfabetics]
-    availables_functions = {}
+    available_functions = {}
 
     for package in packages:
         for module_name in discover_modules(package):
@@ -27,17 +27,17 @@ def discover_functions():
                     continue
                 func = getattr(module, function_name)
                 if callable(func):
-                    availables_functions[function_name] = func
+                    available_functions[function_name] = func
 
-    return availables_functions
+    return available_functions
 
-# Mostrar funciones
+# Mostrar funciones disponibles
 def show_functions(functions):
     print("Funciones disponibles:")
     for name in functions:
         print(f" - {name}")
 
-# Función Main
+# Ejecución desde la consola
 def main():
     functions = discover_functions()
 
@@ -45,25 +45,34 @@ def main():
         show_functions(functions)
         return
 
-    if len(sys.argv) < 3:
-        print("❗ Uso: python main.py <function_name> <var1> [<var2>]")
+    if len(sys.argv) < 2:
+        print("Uso: python main.py <function_name> <arg1> [<arg2> ...] [clave=valor ...]")
         print("Usa `--help` para ver la lista de funciones disponibles.")
         return
 
     function_name = sys.argv[1]
-    var1 = sys.argv[2]
-    var2 = sys.argv[3] if len(sys.argv) > 3 else None
+    raw_args = sys.argv[2:]
+
+    positional_args = []
+    keyword_args = {}
+
+    for arg in raw_args:
+        if "=" in arg:
+            key, value = arg.split("=", 1)
+            keyword_args[key] = value
+        else:
+            positional_args.append(arg)
 
     function = functions.get(function_name)
 
     if not function:
-        print(f"❌ Función '{function_name}' no encontrada.\n")
+        print(f"Función '{function_name}' no encontrada.\n")
         print("Usa `--help` para ver las funciones disponibles.")
         return
 
     try:
-        result = function(var1, var2)
-        print(f"Resultado: {result}")
+        result = function(*positional_args, **keyword_args)
+        print(f"✅ Resultado: {result}")
     except Exception as e:
         print(f"Error al ejecutar la función: {e}")
 
@@ -73,8 +82,8 @@ functions_cache = discover_functions()
 
 class RequestModel(BaseModel):
     function: str
-    var1: str
-    var2: Optional[str] = None
+    args: List[Any] = []
+    kwargs: Dict[str, Any] = {}
 
 @app.post("/execute-function")
 def execute_function(data: RequestModel):
@@ -83,11 +92,11 @@ def execute_function(data: RequestModel):
         raise HTTPException(status_code=404, detail="Función no encontrada")
 
     try:
-        result = func(data.var1, data.var2)
+        result = func(*data.args, **data.kwargs)
         return {"result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Detecta si se ejecuta por consola o con Uvicorn
+# Ejecucion de terminal
 if __name__ == "__main__":
     main()
