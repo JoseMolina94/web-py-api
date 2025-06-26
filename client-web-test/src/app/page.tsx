@@ -2,11 +2,11 @@
 
 import { ChangeEvent, useState, useEffect } from 'react'
 import { FunctionSchemeData } from '@/types/functions'
-import { 
-  additionFunctionScheme, 
-  subtractionFunctionScheme, 
-  toLowercaseFunctionScheme, 
-  toUppercaseFunctionScheme 
+import {
+  additionFunctionScheme,
+  subtractionFunctionScheme,
+  toLowercaseFunctionScheme,
+  toUppercaseFunctionScheme
 } from '@/schemes/functions'
 
 import styles from "./page.module.css"
@@ -59,6 +59,7 @@ export default function Home() {
     }, {} as Record<string, string>)
 
     setKwargs(newKwargs)
+    setResult('')
   }
 
   const onChangeArg = (index: number, value: string) => {
@@ -156,10 +157,14 @@ export default function Home() {
             >
               Ejecutar
             </button>
-            <p className={styles.resultLabel}>
-              <strong>Resultado: </strong>
-              {result}
-            </p>
+
+            {
+              result &&
+              <p className={styles.resultLabel}>
+                <strong>Resultado: </strong>
+                {result}
+              </p>
+            }
           </div>
 
         </div>
