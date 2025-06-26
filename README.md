@@ -2,7 +2,7 @@
 
 Este proyecto tiene una interfaz web desarrollada con **Next.js 15** que permite ejecutar funciones Python alojadas en una API construida con **FastAPI**. El usuario puede seleccionar una función, completar los argumentos requeridos y ver el resultado en tiempo real. Adicionalmente las misma funciones de Python pueden ejecutarse en la terminal o consola de preferencia.
 
-Y este contiene a su vez un diagrama para una solución de como se para integra Fracttal API.
+Y este contiene a su vez un diagrama para una solución de como se integra Fracttal API.
 
 ## Estructura del Proyecto
 
@@ -71,7 +71,7 @@ Para este paso necesitas tener **FastAPI** instalado, en caso contrario utiliza 
 pip install fastapi uvicorn
 ```
 
-Utiliza el comando: 
+Utiliza el comando para arrancar la API: 
 
 ```bash
 uvicorn main:app --reload
@@ -102,3 +102,10 @@ npm run dev
 ```
 
 Esto abrira la interfaz en http://localhost:3000 y podrás verla y utilizarla de manera simple.
+
+## Contenido adicional (Diagrama para una solución de como se integra Fracttal API)
+
+Puedes ver los diagramas y una breve definición de cada componente en las imágenes dentro de la carpeta **erp-problem-solution**.
+
+
+#### Gracias por leer
