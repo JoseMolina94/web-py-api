@@ -3,7 +3,8 @@ import importlib
 import pkgutil
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import List, Dict, Any
+from dictionary import FUNCTION_METADATA
 
 # Paquetes como módulos
 import numerics
@@ -33,9 +34,12 @@ def discover_functions():
 
 # Mostrar funciones disponibles
 def show_functions(functions):
-    print("Funciones disponibles:")
+    print("Funciones disponibles:\n")
     for name in functions:
-        print(f" - {name}")
+        args = FUNCTION_METADATA.get(name, [])
+        args_str = ", ".join(args) if args else "(argumentos dinámicos)"
+        print(f" - {name}({args_str})")
+    print("\nUsa: python main.py <function_name> <arg1> [<arg2> ...] o clave=valor")
 
 # Ejecución desde la consola
 def main():
@@ -72,7 +76,7 @@ def main():
 
     try:
         result = function(*positional_args, **keyword_args)
-        print(f"✅ Resultado: {result}")
+        print(f"Resultado: {result}")
     except Exception as e:
         print(f"Error al ejecutar la función: {e}")
 
